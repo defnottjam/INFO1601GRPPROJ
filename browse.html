@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Browse — FortShop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+
+<header id="main-nav">
+  <a href="index.html" class="logo">FORT<span>SHOP</span></a>
+  <nav class="nav-links">
+    <a href="index.html"   class="nav-link">Home</a>
+    <a href="browse.html"  class="nav-link active">Browse</a>
+    <a href="profile.html" class="nav-link" id="nav-profile" style="display:none">My Wishlist</a>
+  </nav>
+  <div class="nav-auth">
+    <a href="login.html"  class="btn-nav"              id="nav-login">Login</a>
+    <button               class="btn-nav btn-nav-ghost" id="nav-logout" style="display:none">Logout</button>
+  </div>
+</header>
+
+
+<div class="browse-controls">
+
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M14.5 14.5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <input type="text" id="search-input" placeholder="Search skins, emotes, bundles…" autocomplete="off"/>
+  </div>
+
+  <div class="chip-row" id="type-chips">
+    <button class="chip active" data-type="all">All</button>
+  </div>
+
+  <div class="filter-row">
+    <span class="filter-label">Rarity:</span>
+    <div class="chip-row" id="rarity-chips">
+      <button class="chip active" data-rarity="all">All</button>
+      <button class="chip" data-rarity="legendary">Legendary</button>
+      <button class="chip" data-rarity="epic">Epic</button>
+      <button class="chip" data-rarity="rare">Rare</button>
+      <button class="chip" data-rarity="uncommon">Uncommon</button>
+      <button class="chip" data-rarity="common">Common</button>
+    </div>
+
+    <span class="filter-label" style="margin-left:1rem">Sort:</span>
+    <select class="sort-select" id="sort-select">
+      <option value="default">Default</option>
+      <option value="price-asc">Price ↑</option>
+      <option value="price-desc">Price ↓</option>
+      <option value="name-asc">Name A–Z</option>
+      <option value="name-desc">Name Z–A</option>
+    </select>
+
+    <span class="results-count" id="results-count"></span>
+  </div>
+</div>
+
+<main class="browse-main">
+  <div id="browse-loader" class="loader-wrap">
+    <div class="spinner"></div>
+    <p>Fetching today's shop…</p>
+  </div>
+
+  <div id="browse-empty" class="empty-state" style="display:none">
+    <p>No items match your search.</p>
+  </div>
+
+  <div class="item-grid" id="browse-grid"></div>
+</main>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <button class="modal-x" id="modal-close" aria-label="Close">✕</button>
+
+    <div class="modal-hero">
+      <div class="modal-stripe" id="modal-stripe"></div>
+      <img id="modal-img" src="" alt=""/>
+      <div class="modal-hero-fade"></div>
+    </div>
+
+    <div class="modal-body">
+      <p class="modal-rarity" id="modal-rarity"></p>
+      <h2 class="modal-name"  id="modal-name"></h2>
+      <p class="modal-desc"   id="modal-desc"></p>
+
+      <div class="modal-tags" id="modal-tags"></div>
+
+      <div class="modal-footer-row">
+        <div class="modal-price">
+          <img src="https://fortnite-api.com/images/vbuck.png" class="vbuck-icon" alt="V-Bucks"/>
+          <span id="modal-price-val"></span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-primary" id="modal-wishlist-btn">+ Wishlist</button>
+          <button class="btn-ghost"   id="modal-close-btn">Close</button>
+        </div>
+      </div>
+
+      <div class="comments-section">
+        <h3 class="comments-heading">Community Reviews</h3>
+        <div id="comments-list"></div>
+        <div id="comment-form" style="display:none">
+          <textarea id="comment-input" class="comment-textarea"
+                    placeholder="Share your thoughts on this item…"></textarea>
+          <button class="btn-primary btn-sm" id="post-comment-btn">Post Review</button>
+        </div>
+        <p id="comment-login-prompt" class="muted-text">
+          <a href="login.html">Log in</a> to leave a review.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<footer class="site-footer">
+  <p>FortShop · Powered by <a href="https://fortnite-api.com" target="_blank">fortnite-api.com</a> · Not affiliated with Epic Games</p>
+</footer>
+
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>      
+<script src="js/api.js"></script>       
+<script src="js/ui.js"></script>        
+<script src="js/storage.js"></script>   
+
+<script>
+  let allItems     = [];
+  let activeType   = 'all';
+  let activeRarity = 'all';
+  let currentEntry = null;  
+
+  
+  const urlParams  = new URLSearchParams(window.location.search);
+  const presetType = urlParams.get('type') || 'all';
+
+  auth.onAuthStateChanged(user => {
+    document.getElementById('nav-login').style.display    = user ? 'none'         : 'inline-block';
+    document.getElementById('nav-logout').style.display   = user ? 'inline-block' : 'none';
+    document.getElementById('nav-profile').style.display  = user ? 'inline-block' : 'none';
+
+    const commentForm   = document.getElementById('comment-form');
+    const commentPrompt = document.getElementById('comment-login-prompt');
+    if (commentForm && commentPrompt) {
+      commentForm.style.display   = user ? 'block' : 'none';
+      commentPrompt.style.display = user ? 'none'  : 'block';
+    }
+
+    if (currentEntry && user) refreshWishlistBtn(currentEntry);
+  });
+
+  document.getElementById('nav-logout').addEventListener('click', () => auth.signOut());
+
+  function buildTypeChips(entries) {
+    const typeMap = {};
+    entries.forEach(e => {
+      const raw   = e.brItems?.[0]?.type?.value || (e.bundle ? 'bundle' : 'other');
+      const label = e.brItems?.[0]?.type?.displayValue || (e.bundle ? 'Bundle' : 'Other');
+      if (!typeMap[raw]) typeMap[raw] = { label, count: 0 };
+      typeMap[raw].count++;
+    });
+
+    const container = document.getElementById('type-chips');
+    container.querySelector('[data-type="all"]').textContent = `All (${entries.length})`;
+
+    Object.entries(typeMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .forEach(([type, info]) => {
+        if (container.querySelector(`[data-type="${type}"]`)) return;
+        const btn = document.createElement('button');
+        btn.className    = 'chip';
+        btn.dataset.type = type;
+        btn.textContent  = `${info.label} (${info.count})`;
+        container.appendChild(btn);
+      });
+
+    if (presetType !== 'all') {
+      activeType = presetType;
+      container.querySelectorAll('.chip').forEach(c =>
+        c.classList.toggle('active', c.dataset.type === presetType));
+    }
+
+    container.querySelectorAll('.chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeType = btn.dataset.type;
+        renderGrid();
+      });
+    });
+  }
+
+  document.getElementById('rarity-chips').querySelectorAll('.chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('rarity-chips').querySelectorAll('.chip')
+        .forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeRarity = btn.dataset.rarity;
+      renderGrid();
+    });
+  });
+
+  document.getElementById('sort-select').addEventListener('change', renderGrid);
+  document.getElementById('search-input').addEventListener('input', renderGrid);
+
+  function renderGrid() {
+    const query  = document.getElementById('search-input').value.trim().toLowerCase();
+    const sort   = document.getElementById('sort-select').value;
+    const grid   = document.getElementById('browse-grid');
+    const empty  = document.getElementById('browse-empty');
+
+    let filtered = [...allItems];
+
+    if (activeType !== 'all') {
+      filtered = filtered.filter(e => {
+        const t = e.brItems?.[0]?.type?.value || (e.bundle ? 'bundle' : 'other');
+        return t === activeType;
+      });
+    }
+
+    if (activeRarity !== 'all') {
+      filtered = filtered.filter(e =>
+        (e.brItems?.[0]?.rarity?.value || 'common') === activeRarity);
+    }
+
+    if (query) {
+      filtered = filtered.filter(e => {
+        const info = getItemInfo(e); 
+        return info.name.toLowerCase().includes(query)
+            || (info.set  || '').toLowerCase().includes(query)
+            || (info.desc || '').toLowerCase().includes(query);
+      });
+    }
+
+    if (sort === 'price-asc')  filtered.sort((a, b) => a.finalPrice - b.finalPrice);
+    if (sort === 'price-desc') filtered.sort((a, b) => b.finalPrice - a.finalPrice);
+    if (sort === 'name-asc')   filtered.sort((a, b) => getItemInfo(a).name.localeCompare(getItemInfo(b).name));
+    if (sort === 'name-desc')  filtered.sort((a, b) => getItemInfo(b).name.localeCompare(getItemInfo(a).name));
+
+    grid.innerHTML  = '';
+    empty.style.display = filtered.length === 0 ? 'block' : 'none';
+    document.getElementById('results-count').textContent =
+      `${filtered.length} item${filtered.length !== 1 ? 's' : ''}`;
+
+    filtered.forEach((entry, i) => {
+      const card = buildItemCard(entry, i);
+      card.addEventListener('click', () => openModal(entry));
+      grid.appendChild(card);
+    });
+  }
+
+  function openModal(entry) {
+    currentEntry = entry;
+    const info = getItemInfo(entry); 
+    const rc   = rarityColors[info.rarity] || '#888';
+
+    document.getElementById('modal-img').src            = info.img;
+    document.getElementById('modal-img').alt            = info.name;
+    document.getElementById('modal-stripe').style.background = rc;
+    document.getElementById('modal-rarity').style.color      = rc;
+    document.getElementById('modal-rarity').textContent = `${info.rarity.toUpperCase()} · ${info.type}`;
+    document.getElementById('modal-name').textContent   = info.name;
+    document.getElementById('modal-desc').textContent   = info.desc || 'No description available.';
+    document.getElementById('modal-price-val').textContent = Number(info.price).toLocaleString();
+
+    const tags = document.getElementById('modal-tags');
+    tags.innerHTML = '';
+    if (info.set)         tags.innerHTML += `<span class="tag">📦 ${info.set}</span>`;
+    if (info.giftable)    tags.innerHTML += `<span class="tag">🎁 Giftable</span>`;
+    if (entry.refundable) tags.innerHTML += `<span class="tag">↩ Refundable</span>`;
+    if (info.banner)      tags.innerHTML += `<span class="tag">🔥 ${info.banner}</span>`;
+
+    document.getElementById('modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    refreshWishlistBtn(entry);
+
+    const itemKey = entry.offerId || info.name;
+    loadComments(itemKey);
+
+    document.getElementById('post-comment-btn').onclick = async () => {
+      const text = document.getElementById('comment-input').value.trim();
+      if (!text) return;
+      await postComment(itemKey, info.name, text);
+      document.getElementById('comment-input').value = '';
+      loadComments(itemKey);
+    };
+  }
+
+  function refreshWishlistBtn(entry) {
+    const btn  = document.getElementById('modal-wishlist-btn');
+    const user = auth.currentUser;
+    if (!user) { btn.textContent = '+ Wishlist'; return; }
+
+    const itemKey = entry.offerId || getItemInfo(entry).name;
+    isWishlisted(itemKey).then(saved => {
+      btn.textContent = saved ? '✓ Wishlisted' : '+ Wishlist';
+      btn.onclick = async () => {
+        await toggleWishlist(getItemInfo(entry), itemKey); 
+        refreshWishlistBtn(entry);
+      };
+    });
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    currentEntry = null;
+  }
+
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  (async () => {
+    const data = await fetchShop();
+    document.getElementById('browse-loader').style.display = 'none';
+
+    if (!data) {
+      document.getElementById('browse-empty').style.display = 'block';
+      document.getElementById('browse-empty').innerHTML     = '<p>Could not load the item shop. Try refreshing.</p>';
+      return;
+    }
+
+    allItems = data.entries || [];
+    buildTypeChips(allItems);
+    renderGrid();
+  })();
+</script>
+
+</body>
+</html>
