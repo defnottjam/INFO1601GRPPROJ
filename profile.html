@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Wishlist — FortShop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+
+<!-- ============================================================
+  DARI — Marketing
+  File: profile.html
+  Responsibility: Protected wishlist page — shows user's saved items
+  as FULL cards (image + name + rarity + price — NOT just a title),
+  plus the user's posted reviews with delete option.
+  Auth guard redirects unauthenticated visitors to login.html.
+  Also owns: storage.js, comments section on detail.html
+============================================================ -->
+
+
+<!-- Shared navbar -->
+<header id="main-nav">
+  <a href="index.html" class="logo">FORT<span>SHOP</span></a>
+  <nav class="nav-links">
+    <a href="index.html"   class="nav-link">Home</a>
+    <a href="browse.html"  class="nav-link">Browse</a>
+    <a href="profile.html" class="nav-link active">My Wishlist</a>
+  </nav>
+  <div class="nav-auth">
+    <button class="btn-nav btn-nav-ghost" id="nav-logout">Logout</button>
+  </div>
+</header>
+
+
+<!-- ── DARI (Marketing): Profile header — avatar, name, email, stats ── -->
+<div class="profile-header">
+  <div class="profile-avatar" id="profile-avatar">?</div>
+  <div class="profile-info">
+    <h1 class="profile-name"  id="profile-name">Loading…</h1>
+    <p  class="profile-email" id="profile-email"></p>
+  </div>
+  <div class="profile-stats">
+    <div class="stat-box">
+      <div class="stat-num"   id="stat-wishlist">0</div>
+      <div class="stat-label">Wishlisted</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num"   id="stat-reviews">0</div>
+      <div class="stat-label">Reviews</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ── DARI (Marketing): Tab navigation ── -->
+<div class="profile-tabs">
+  <button class="ptab active" data-tab="wishlist">Wishlist</button>
+  <button class="ptab"        data-tab="reviews">My Reviews</button>
+</div>
+
+
+<main class="profile-main">
+
+  <!-- ── DARI (Marketing): Wishlist tab ── -->
+  <div id="tab-wishlist" class="tab-panel">
+    <div id="wishlist-loader" class="loader-wrap">
+      <div class="spinner"></div>
+      <p>Loading wishlist…</p>
+    </div>
+
+    <div id="wishlist-empty" class="empty-state" style="display:none">
+      <p>Your wishlist is empty.</p>
+      <a href="browse.html" class="btn-primary" style="margin-top:1rem">Browse the shop</a>
+    </div>
+
+    <!-- Full item cards — each shows image, name, rarity, type, V-Buck price
+         NOT just a name or ID (spec feedback: show more than just an identifier) -->
+    <div class="item-grid" id="wishlist-grid"></div>
+  </div>
+
+
+  <!-- ── DARI (Marketing): Reviews tab ── -->
+  <div id="tab-reviews" class="tab-panel" style="display:none">
+    <div id="reviews-loader" class="loader-wrap">
+      <div class="spinner"></div>
+      <p>Loading reviews…</p>
+    </div>
+
+    <div id="reviews-empty" class="empty-state" style="display:none">
+      <p>You haven't posted any reviews yet.</p>
+      <a href="browse.html" class="btn-ghost" style="margin-top:1rem">Browse items</a>
+    </div>
+
+    <div class="reviews-list" id="reviews-list"></div>
+  </div>
+
+</main>
+
+
+<!-- Shared footer -->
+<footer class="site-footer">
+  <p>FortShop · Powered by <a href="https://fortnite-api.com" target="_blank">fortnite-api.com</a> · Not affiliated with Epic Games</p>
+</footer>
+
+
+<!-- ============================================================
+  DARI — Marketing
+  Profile page JavaScript
+  - Auth guard — redirects to login.html if not signed in
+  - loadWishlist(): fetches user's saved items from Firestore,
+    renders FULL cards with image / name / rarity / type / price
+  - loadMyReviews(): fetches user's comments, lets them delete
+  - Tab switching between Wishlist and Reviews
+  All Firestore ops use Dari's own functions from storage.js
+============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>      <!-- Kaedan -->
+<script src="js/ui.js"></script>        <!-- Vasant (renderStars + formatDate helpers) -->
+<script src="js/storage.js"></script>   <!-- Dari -->
+
+<script>
+  // ── DARI (Marketing): Auth guard — must be logged in to view this page ──
+  auth.onAuthStateChanged(async user => {
+    if (!user) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // ── DARI (Marketing): Populate profile header ──
+    const displayName = user.displayName || user.email.split('@')[0];
+    document.getElementById('profile-name').textContent  = displayName;
+    document.getElementById('profile-email').textContent = user.email;
+    document.getElementById('profile-avatar').textContent = displayName.charAt(0).toUpperCase();
+
+    // Load wishlist and reviews — all Dari's Firestore functions from storage.js
+    await loadWishlist(user.uid);
+    await loadMyReviews(user.uid);
+  });
+
+  // ── DARI (Marketing): Logout ──
+  document.getElementById('nav-logout').addEventListener('click', () => {
+    auth.signOut().then(() => window.location.href = 'index.html');
+  });
+
+  // ── DARI (Marketing): Tab switching ──
+  document.querySelectorAll('.ptab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.ptab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+      tab.classList.add('active');
+      document.getElementById(`tab-${tab.dataset.tab}`).style.display = 'block';
+    });
+  });
+
+  // ── DARI (Marketing): Load and display wishlist ──
+  // getWishlist() is in Dari's storage.js
+  async function loadWishlist(uid) {
+    const loader = document.getElementById('wishlist-loader');
+    const empty  = document.getElementById('wishlist-empty');
+    const grid   = document.getElementById('wishlist-grid');
+
+    const items = await getWishlist(uid); // Dari's storage.js
+    loader.style.display = 'none';
+    document.getElementById('stat-wishlist').textContent = items.length;
+
+    if (items.length === 0) { empty.style.display = 'block'; return; }
+
+    items.forEach((item, i) => {
+      const rc  = rarityColors[item.rarity] || '#888'; // rarityColors — Vasant's api.js
+      const div = document.createElement('div');
+      div.className = 'item-card';
+      div.style.setProperty('--rc', rc);
+      div.style.animationDelay = `${i * 40}ms`;
+
+      // ── DARI (Marketing): Full card — shows image, name, rarity, type, price ──
+      // NOT just a title: feedback from last year said bookmark view must show more
+      div.innerHTML = `
+        <div class="card-img-wrap">
+          <div class="rarity-stripe"></div>
+          <img class="card-img" src="${item.img}" alt="${item.name}" loading="lazy"
+               onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%230a0f1e%22/></svg>'"/>
+        </div>
+        <div class="card-body">
+          <div class="card-type" style="color:${rc}">${item.type}</div>
+          <div class="card-name">${item.name}</div>
+          ${item.set ? `<div class="card-set">${item.set}</div>` : ''}
+          <div class="card-footer">
+            <div class="card-price">
+              <img class="vbuck-sm" src="https://fortnite-api.com/images/vbuck.png" alt="V-Bucks"/>
+              ${Number(item.price).toLocaleString()}
+            </div>
+            <span style="font-size:.68rem;color:${rc};font-weight:600;text-transform:uppercase">${item.rarity}</span>
+          </div>
+          <button class="btn-remove" data-id="${item.id}" style="margin-top:.5rem;width:100%">Remove</button>
+        </div>`;
+
+      // ── DARI (Marketing): Remove from wishlist ──
+      div.querySelector('.btn-remove').addEventListener('click', async e => {
+        e.stopPropagation();
+        await removeFromWishlist(auth.currentUser.uid, e.target.dataset.id); // Dari's storage.js
+        div.remove();
+        const remaining = grid.querySelectorAll('.item-card').length;
+        document.getElementById('stat-wishlist').textContent = remaining;
+        if (remaining === 0) empty.style.display = 'block';
+      });
+
+      grid.appendChild(div);
+    });
+  }
+
+  // ── DARI (Marketing): Load and display user's reviews ──
+  // getUserReviews() is in Dari's storage.js
+  async function loadMyReviews(uid) {
+    const loader = document.getElementById('reviews-loader');
+    const empty  = document.getElementById('reviews-empty');
+    const list   = document.getElementById('reviews-list');
+
+    const reviews = await getUserReviews(uid); // Dari's storage.js
+    loader.style.display = 'none';
+    document.getElementById('stat-reviews').textContent = reviews.length;
+
+    if (reviews.length === 0) { empty.style.display = 'block'; return; }
+
+    reviews.forEach(review => {
+      const d   = review.createdAt?.toDate ? review.createdAt.toDate() : new Date();
+      const div = document.createElement('div');
+      div.className = 'review-card';
+      div.innerHTML = `
+        <div class="review-header">
+          <span class="review-item-name">${review.itemName || review.itemId}</span>
+          <span class="review-date">${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
+        </div>
+        <p class="review-text">${review.text}</p>
+        <button class="btn-remove btn-sm" data-id="${review.id}">Delete</button>`;
+
+      // ── DARI (Marketing): Delete own review ──
+      div.querySelector('.btn-remove').addEventListener('click', async e => {
+        await deleteComment(e.target.dataset.id); // Dari's storage.js
+        div.remove();
+        const remaining = list.querySelectorAll('.review-card').length;
+        document.getElementById('stat-reviews').textContent = remaining;
+        if (remaining === 0) empty.style.display = 'block';
+      });
+
+      list.appendChild(div);
+    });
+  }
+</script>
+
+</body>
+</html>
