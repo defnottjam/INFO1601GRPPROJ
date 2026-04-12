@@ -1,17 +1,3 @@
-// ============================================================
-// DARI — Marketing
-// File: js/storage.js
-// Responsibility: ALL Firestore read/write operations for the project.
-// Wishlist: save, remove, get all, check if item is saved
-// Comments/Reviews: post, load into a DOM element, load user's own, delete
-// The `db` and `auth` instances come from Kaedan's auth.js
-// ============================================================
-
-
-// ── DARI (Marketing): Save an item to the logged-in user's wishlist ──
-// Saves the full item object so profile.html can display rich cards.
-// itemData — flat object returned by Vasant's getItemInfo() from api.js
-// itemId   — unique string key (offerId or item name)
 async function saveToWishlist(uid, itemData, itemId) {
   try {
     await db
@@ -35,8 +21,6 @@ async function saveToWishlist(uid, itemData, itemId) {
 }
 
 
-// ── DARI (Marketing): Remove an item from the user's wishlist ──
-// Called by the "Remove" button on profile.html
 async function removeFromWishlist(uid, itemId) {
   try {
     await db
@@ -51,9 +35,6 @@ async function removeFromWishlist(uid, itemId) {
 }
 
 
-// ── DARI (Marketing): Get all wishlisted items for a user ──
-// Returns an array of full item objects ordered newest-first.
-// Called by loadWishlist() in profile.html
 async function getWishlist(uid) {
   try {
     const snap = await db
@@ -69,9 +50,6 @@ async function getWishlist(uid) {
   }
 }
 
-
-// ── DARI (Marketing): Check if a specific item is in the user's wishlist ──
-// Returns true/false. Called by wishlist toggle buttons on browse.html and detail.html
 async function isWishlisted(itemId) {
   const user = auth.currentUser;
   if (!user) return false;
@@ -89,9 +67,6 @@ async function isWishlisted(itemId) {
 }
 
 
-// ── DARI (Marketing): Toggle wishlist — save if not saved, remove if saved ──
-// Called by the wishlist button in browse.html modal and detail.html.
-// If the user is not logged in, redirects to login.html.
 async function toggleWishlist(itemData, itemId) {
   const user = auth.currentUser;
   if (!user) {
@@ -107,10 +82,6 @@ async function toggleWishlist(itemData, itemId) {
 }
 
 
-// ── DARI (Marketing): Post a review/comment on an item ──
-// itemId   — unique item key (offerId or name) used as the document grouping
-// itemName — display name stored with the comment (for the "My Reviews" tab)
-// text     — the review text from the textarea
 async function postComment(itemId, itemName, text) {
   const user = auth.currentUser;
   if (!user || !text.trim()) return;
@@ -128,10 +99,6 @@ async function postComment(itemId, itemName, text) {
   }
 }
 
-
-// ── DARI (Marketing): Load comments for an item into a target DOM element ──
-// Used by browse.html modal (targets #comments-list)
-// and detail.html (targets #detail-comments-list via loadCommentsInto)
 async function loadComments(itemId) {
   const listEl = document.getElementById('comments-list');
   if (!listEl) return;
@@ -143,7 +110,6 @@ async function loadCommentsInto(itemId, listEl) {
   await _renderCommentsInto(itemId, listEl);
 }
 
-// ── DARI (Marketing): Internal — query Firestore and render comment cards ──
 async function _renderCommentsInto(itemId, listEl) {
   listEl.innerHTML = '<p class="muted-text">Loading reviews…</p>';
   try {
@@ -164,7 +130,7 @@ async function _renderCommentsInto(itemId, listEl) {
       const d    = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
       const div  = document.createElement('div');
       div.className = 'comment-card';
-      // Must show the username — examiner feedback: comments should show who wrote them
+      
       div.innerHTML = `
         <div class="comment-header">
           <span class="comment-user">${data.username}</span>
@@ -180,8 +146,6 @@ async function _renderCommentsInto(itemId, listEl) {
 }
 
 
-// ── DARI (Marketing): Get all reviews posted by a specific user ──
-// Called by loadMyReviews() in profile.html for the "My Reviews" tab
 async function getUserReviews(uid) {
   try {
     const snap = await db
@@ -196,9 +160,6 @@ async function getUserReviews(uid) {
   }
 }
 
-
-// ── DARI (Marketing): Delete a comment by Firestore document ID ──
-// Called by the "Delete" button on profile.html's My Reviews tab
 async function deleteComment(commentId) {
   try {
     await db.collection('comments').doc(commentId).delete();
