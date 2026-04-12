@@ -21,7 +21,7 @@ function buildItemCard(entry, delay = 0) {
            src="${info.img}"
            alt="${info.name}"
            loading="lazy"
-           onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22><rect fill=%22%230a0f1e%22/></svg>'"/>
+           onerror="this.onerror=null; this.src='https://fortnite-api.com/images/cosmetics/br/placeholder/icon.png'"
     </div>
     <div class="card-body">
       <div class="card-type" style="color:${rc}">${info.type}</div>
