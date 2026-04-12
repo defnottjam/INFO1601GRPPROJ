@@ -43,10 +43,10 @@ function getItemInfo(entry) {
   const rarity   = item?.rarity?.value
                || entry.brItems?.[1]?.rarity?.value
                || 'common';
-  const type     = item?.type?.displayValue
-               || (bundle ? 'Bundle' : null)
-               || entry.brItems?.[1]?.type?.displayValue
-               || 'Item';
+  const type = item?.type?.displayValue
+           || (bundle ? 'Bundle' : null)
+           || entry.brItems?.[1]?.type?.displayValue
+           || (entry.tracks?.[0] ? 'Music' : 'Item');
   const typeRaw  = item?.type?.value
                || entry.brItems?.[1]?.type?.value
                || 'bundle';
@@ -65,6 +65,10 @@ function getItemInfo(entry) {
           || bundle?.image
           || entry.brItems?.[1]?.images?.featured
           || entry.brItems?.[1]?.images?.icon
+          || entry.tracks?.[0]?.albumArt
+          || entry.tracks?.[0]?.images?.coverArt
+          || entry.tracks?.[0]?.images?.featured
+          || entry.tracks?.[0]?.coverArtImage
           || '';
 
   return { name, desc, rarity, type, typeRaw, set, intro, img, price, giftable, banner };
