@@ -103,35 +103,46 @@
 <script src="js/storage.js"></script>  
 
 <script>
-  
   auth.onAuthStateChanged(user => {
-    document.getElementById('nav-login').style.display    = user ? 'none'         : 'inline-block';
-    document.getElementById('nav-logout').style.display   = user ? 'inline-block' : 'none';
-    document.getElementById('nav-profile').style.display  = user ? 'inline-block' : 'none';
+    document.getElementById('nav-login').style.display   = user ? 'none'         : 'inline-block';
+    document.getElementById('nav-logout').style.display  = user ? 'inline-block' : 'none';
+    document.getElementById('nav-profile').style.display = user ? 'inline-block' : 'none';
 
-    
     const form   = document.getElementById('detail-comment-form');
     const prompt = document.getElementById('detail-comment-prompt');
     if (form && prompt) {
       form.style.display   = user ? 'block' : 'none';
       prompt.style.display = user ? 'none'  : 'block';
     }
-
-   
     if (window._currentEntry && user) refreshDetailWishlistBtn(window._currentEntry);
   });
 
   document.getElementById('nav-logout').addEventListener('click', () => auth.signOut());
 
-  const params  = new URLSearchParams(window.location.search);
-  const entryId = params.get('id');
+  function refreshDetailWishlistBtn(entry) {
+    const btn     = document.getElementById('detail-wishlist-btn');
+    const user    = auth.currentUser;
+    const itemKey = (entry.offerId || getItemInfo(entry).name)
+                    .replace(/[\/:.]/g, '_').substring(0, 100);
+    if (!user) { btn.textContent = '+ Wishlist'; return; }
+    isWishlisted(itemKey).then(saved => {
+      btn.textContent = saved ? '✓ Wishlisted' : '+ Wishlist';
+      btn.onclick = async () => {
+        await toggleWishlist(getItemInfo(entry), itemKey);
+        refreshDetailWishlistBtn(entry);
+      };
+    });
+  }
 
-  
+  (async () => {
+    const params  = new URLSearchParams(window.location.search);
+    const entryId = params.get('id');
+
     if (!entryId) {
-      window.location.href = 'browse.html'; 
+      window.location.href = 'browse.html';
+      return;
     }
 
-    
     const data = await fetchShop();
     document.getElementById('detail-loader').style.display = 'none';
 
@@ -142,7 +153,6 @@
     }
 
     const entries = data.entries || [];
-    
     const entry   = entries.find(e => (e.offerId || '') === entryId)
                  || entries[parseInt(entryId, 10)]
                  || null;
@@ -155,21 +165,19 @@
 
     window._currentEntry = entry;
 
-    
-    const info = getItemInfo(entry); 
+    const info = getItemInfo(entry);
     const rc   = rarityColors[info.rarity] || '#888';
 
-    
     document.getElementById('detail-stripe').style.background = rc;
-    document.getElementById('detail-img').src  = info.img;
-    document.getElementById('detail-img').alt  = info.name;
+    document.getElementById('detail-img').src                 = info.img;
+    document.getElementById('detail-img').alt                 = info.name;
     document.title = `${info.name} — FortShop`;
 
-    document.getElementById('detail-rarity').style.color = rc;
-    document.getElementById('detail-rarity').textContent = `${info.rarity.toUpperCase()} · ${info.type}`;
-    document.getElementById('detail-title').textContent  = info.name;
-    document.getElementById('detail-desc').textContent   = info.desc || 'No description available.';
-    document.getElementById('detail-price-val').textContent = Number(info.price).toLocaleString();
+    document.getElementById('detail-rarity').style.color      = rc;
+    document.getElementById('detail-rarity').textContent      = `${info.rarity.toUpperCase()} · ${info.type}`;
+    document.getElementById('detail-title').textContent       = info.name;
+    document.getElementById('detail-desc').textContent        = info.desc || 'No description available.';
+    document.getElementById('detail-price-val').textContent   = Number(info.price).toLocaleString();
 
     const tags = document.getElementById('detail-tags');
     if (info.set)         tags.innerHTML += `<span class="tag">📦 ${info.set}</span>`;
@@ -179,38 +187,20 @@
 
     document.getElementById('detail-content').style.display = 'block';
 
-    
     refreshDetailWishlistBtn(entry);
 
-    
-    const itemKey = entry.offerId || info.name;
+    const itemKey = (entry.offerId || info.name)
+                    .replace(/[\/:.]/g, '_').substring(0, 100);
     loadCommentsInto(itemKey, document.getElementById('detail-comments-list'));
 
-    
     document.getElementById('detail-post-btn').addEventListener('click', async () => {
       const text = document.getElementById('detail-comment-input').value.trim();
       if (!text) return;
-      await postComment(itemKey, info.name, text); 
+      await postComment(itemKey, info.name, text);
       document.getElementById('detail-comment-input').value = '';
       loadCommentsInto(itemKey, document.getElementById('detail-comments-list'));
     });
-   ;
-
-  []
-  function refreshDetailWishlistBtn(entry) {
-    const btn     = document.getElementById('detail-wishlist-btn');
-    const user    = auth.currentUser;
-    const itemKey = entry.offerId || getItemInfo(entry).name;
-    if (!user) { btn.textContent = '+ Wishlist'; return; }
-
-    isWishlisted(itemKey).then(saved => { 
-      btn.textContent = saved ? '✓ Wishlisted' : '+ Wishlist';
-      btn.onclick = async () => {
-        await toggleWishlist(getItemInfo(entry), itemKey); 
-        refreshDetailWishlistBtn(entry);
-      };
-    });
-  }
+  })();
 </script>
 
 </body>
