@@ -35,12 +35,21 @@ function getItemInfo(entry) {
   const bundle = entry.bundle || null;
 
   const name     = bundle?.name
-                 || item?.name
-                 || 'Unknown Item';
+               || item?.name
+               || entry.brItems?.[1]?.name
+               || entry.tracks?.[0]?.title
+               || 'Shop Item';
   const desc     = item?.description          || '';
-  const rarity   = item?.rarity?.value        || 'common';
-  const type     = item?.type?.displayValue   || (bundle ? 'Bundle' : 'Item');
-  const typeRaw  = item?.type?.value          || 'bundle';
+  const rarity   = item?.rarity?.value
+               || entry.brItems?.[1]?.rarity?.value
+               || 'common';
+  const type     = item?.type?.displayValue
+               || (bundle ? 'Bundle' : null)
+               || entry.brItems?.[1]?.type?.displayValue
+               || 'Item';
+  const typeRaw  = item?.type?.value
+               || entry.brItems?.[1]?.type?.value
+               || 'bundle';
   const set      = item?.set?.value           || '';
   const intro    = item?.introduction?.text   || '';
   const giftable = entry.giftable             || false;
@@ -49,10 +58,14 @@ function getItemInfo(entry) {
 
 
   const img = entry.newDisplayAsset?.renderImages?.[0]?.image
-            || item?.images?.featured
-            || item?.images?.icon
-            || bundle?.image
-            || '';
+          || entry.newDisplayAsset?.renderImages?.[1]?.image
+          || item?.images?.featured
+          || item?.images?.icon
+          || item?.images?.smallIcon
+          || bundle?.image
+          || entry.brItems?.[1]?.images?.featured
+          || entry.brItems?.[1]?.images?.icon
+          || '';
 
   return { name, desc, rarity, type, typeRaw, set, intro, img, price, giftable, banner };
 }
