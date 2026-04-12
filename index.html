@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FortShop — Fortnite Item Shop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+
+<header id="main-nav">
+  <a href="index.html" class="logo">FORT<span>SHOP</span></a>
+  <nav class="nav-links">
+    <a href="index.html"   class="nav-link active">Home</a>
+    <a href="browse.html"  class="nav-link">Browse</a>
+    <a href="profile.html" class="nav-link" id="nav-profile" style="display:none">My Wishlist</a>
+  </nav>
+  <div class="nav-auth">
+    <span class="date-badge" id="shop-date">Loading…</span>
+    <a href="login.html"  class="btn-nav"              id="nav-login">Login</a>
+    <button               class="btn-nav btn-nav-ghost" id="nav-logout" style="display:none">Logout</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-bg-glow"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Daily Item Shop</p>
+    <h1 class="hero-title">Find Your Next<br/><span class="hero-accent">Drop.</span></h1>
+    <p class="hero-sub">Every skin, emote, and bundle in today's Fortnite shop — updated daily. Browse free, wishlist with an account.</p>
+    <div class="hero-cta-row">
+      <a href="browse.html" class="btn-primary">Browse All Items</a>
+      <a href="signup.html" class="btn-ghost" id="hero-signup-btn">Create Account</a>
+    </div>
+  </div>
+  <div class="hero-cards" id="hero-cards"></div>
+</section>
+
+<section class="categories">
+  <h2 class="section-label">Browse by type</h2>
+  <div class="pill-row">
+    <a href="browse.html?type=outfit"   class="pill">Outfits</a>
+    <a href="browse.html?type=backpack" class="pill">Back Blings</a>
+    <a href="browse.html?type=pickaxe"  class="pill">Pickaxes</a>
+    <a href="browse.html?type=emote"    class="pill">Emotes</a>
+    <a href="browse.html?type=wrap"     class="pill">Wraps</a>
+    <a href="browse.html?type=bundle"   class="pill">Bundles</a>
+    <a href="browse.html?type=glider"   class="pill">Gliders</a>
+  </div>
+</section>
+
+<section class="featured">
+  <div class="section-header-row">
+    <h2 class="section-label">Featured today</h2>
+    <a href="browse.html" class="see-all-link">See all →</a>
+  </div>
+  <div class="item-grid" id="featured-grid"></div>
+</section>
+
+<section class="cta-band" id="cta-band">
+  <div class="cta-inner">
+    <h2 class="cta-title">Wishlist your favourite skins</h2>
+    <p class="cta-sub">Create a free account to save items, leave reviews, and track what you want before it leaves the shop.</p>
+    <a href="signup.html" class="btn-primary">Create Free Account</a>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <p>FortShop · Powered by <a href="https://fortnite-api.com" target="_blank">fortnite-api.com</a> · Not affiliated with Epic Games</p>
+</footer>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script src="js/auth.js"></script>   
+<script src="js/api.js"></script>   
+<script src="js/ui.js"></script>     
+
+<script>
+  auth.onAuthStateChanged(user => {
+    const loginBtn    = document.getElementById('nav-login');
+    const logoutBtn   = document.getElementById('nav-logout');
+    const profileLink = document.getElementById('nav-profile');
+    const signupBtn   = document.getElementById('hero-signup-btn');
+    const ctaBand     = document.getElementById('cta-band');
+
+    if (user) {
+      loginBtn.style.display    = 'none';
+      logoutBtn.style.display   = 'inline-block';
+      profileLink.style.display = 'inline-block';
+      if (signupBtn) signupBtn.style.display = 'none';
+      if (ctaBand)   ctaBand.style.display   = 'none';
+    } else {
+      loginBtn.style.display    = 'inline-block';
+      logoutBtn.style.display   = 'none';
+      profileLink.style.display = 'none';
+    }
+  });
+  document.getElementById('nav-logout').addEventListener('click', () => {
+    auth.signOut();
+  });
+  (async () => {
+    const data = await fetchShop();
+    if (!data) return;
+
+    const d = new Date(data.date);
+    document.getElementById('shop-date').textContent =
+      d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+    const entries = data.entries || [];
+    const heroGrid  = document.getElementById('hero-cards');
+    const heroItems = entries.filter(e => getItemInfo(e).img).slice(0, 3);
+    heroItems.forEach((entry, i) => {
+      const info = getItemInfo(entry);       
+      const rc   = rarityColors[info.rarity] || '#888';
+      const div  = document.createElement('div');
+      div.className = 'hero-card';
+      div.style.setProperty('--rc', rc);
+      div.style.animationDelay = `${i * 100}ms`;
+      div.innerHTML = `
+        <div class="hero-card-stripe"></div>
+        <img src="${info.img}" alt="${info.name}" loading="lazy"/>
+        <div class="hero-card-label">${info.name}</div>`;
+      heroGrid.appendChild(div);
+    });
+
+    const featGrid = document.getElementById('featured-grid');
+    entries.slice(0, 6).forEach((entry, i) => {
+      const card = buildItemCard(entry, i);
+      card.addEventListener('click', () => window.location.href = `detail.html?id=${entry.offerId || i}`);
+      featGrid.appendChild(card);
+    });
+  })();
+</script>
+
+</body>
+</html>
