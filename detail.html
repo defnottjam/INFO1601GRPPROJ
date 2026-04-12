@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Item Detail — FortShop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body>
+
+
+
+
+
+<header id="main-nav">
+  <a href="index.html" class="logo">FORT<span>SHOP</span></a>
+  <nav class="nav-links">
+    <a href="index.html"   class="nav-link">Home</a>
+    <a href="browse.html"  class="nav-link">Browse</a>
+    <a href="profile.html" class="nav-link" id="nav-profile" style="display:none">My Wishlist</a>
+  </nav>
+  <div class="nav-auth">
+    <a href="login.html"  class="btn-nav"              id="nav-login">Login</a>
+    <button               class="btn-nav btn-nav-ghost" id="nav-logout" style="display:none">Logout</button>
+  </div>
+</header>
+
+
+
+<div id="detail-loader" class="loader-wrap" style="min-height:60vh">
+  <div class="spinner"></div>
+  <p>Loading item…</p>
+</div>
+
+
+<div id="detail-content" style="display:none">
+
+  
+  <div class="detail-hero" id="detail-hero">
+    <div class="detail-hero-stripe" id="detail-stripe"></div>
+    <img class="detail-hero-img" id="detail-img" src="" alt=""/>
+    <div class="detail-hero-fade"></div>
+  </div>
+
+  <div class="detail-body">
+
+    
+    <div class="detail-meta">
+      <p class="detail-rarity" id="detail-rarity"></p>
+      <h1 class="detail-title" id="detail-title"></h1>
+      <p class="detail-desc"   id="detail-desc"></p>
+
+      
+      <div class="detail-tags" id="detail-tags"></div>
+
+      
+      <div class="detail-price-row">
+        <div class="detail-price">
+          <img src="https://fortnite-api.com/images/vbuck.png" class="vbuck-icon" alt="V-Bucks"/>
+          <span id="detail-price-val"></span>
+        </div>
+        
+        <button class="btn-primary" id="detail-wishlist-btn">+ Wishlist</button>
+      </div>
+    </div>
+
+
+    <div class="comments-section">
+      <h3 class="comments-heading">Community Reviews</h3>
+      
+      <div id="detail-comments-list"></div>
+      
+      <div id="detail-comment-form" style="display:none">
+        <textarea id="detail-comment-input" class="comment-textarea"
+                  placeholder="Share your thoughts on this item…"></textarea>
+        <button class="btn-primary btn-sm" id="detail-post-btn">Post Review</button>
+      </div>
+      <p id="detail-comment-prompt" class="muted-text">
+        <a href="login.html">Log in</a> to leave a review.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+
+
+<footer class="site-footer">
+  <p>FortShop · Powered by <a href="https://fortnite-api.com" target="_blank">fortnite-api.com</a> · Not affiliated with Epic Games</p>
+</footer>
+
+
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>      
+<script src="js/api.js"></script>       
+<script src="js/ui.js"></script>       
+<script src="js/storage.js"></script>  
+
+<script>
+  
+  auth.onAuthStateChanged(user => {
+    document.getElementById('nav-login').style.display    = user ? 'none'         : 'inline-block';
+    document.getElementById('nav-logout').style.display   = user ? 'inline-block' : 'none';
+    document.getElementById('nav-profile').style.display  = user ? 'inline-block' : 'none';
+
+    
+    const form   = document.getElementById('detail-comment-form');
+    const prompt = document.getElementById('detail-comment-prompt');
+    if (form && prompt) {
+      form.style.display   = user ? 'block' : 'none';
+      prompt.style.display = user ? 'none'  : 'block';
+    }
+
+   
+    if (window._currentEntry && user) refreshDetailWishlistBtn(window._currentEntry);
+  });
+
+  document.getElementById('nav-logout').addEventListener('click', () => auth.signOut());
+
+  const params  = new URLSearchParams(window.location.search);
+  const entryId = params.get('id');
+
+  
+    if (!entryId) {
+      window.location.href = 'browse.html'; 
+      return;
+    }
+
+    
+    const data = await fetchShop();
+    document.getElementById('detail-loader').style.display = 'none';
+
+    if (!data) {
+      document.getElementById('detail-content').style.display = 'block';
+      document.getElementById('detail-title').textContent     = 'Item not found.';
+      return;
+    }
+
+    const entries = data.entries || [];
+    
+    const entry   = entries.find(e => (e.offerId || '') === entryId)
+                 || entries[parseInt(entryId, 10)]
+                 || null;
+
+    if (!entry) {
+      document.getElementById('detail-content').style.display = 'block';
+      document.getElementById('detail-title').textContent     = 'Item not found.';
+      return;
+    }
+
+    window._currentEntry = entry;
+
+    
+    const info = getItemInfo(entry); 
+    const rc   = rarityColors[info.rarity] || '#888';
+
+    
+    document.getElementById('detail-stripe').style.background = rc;
+    document.getElementById('detail-img').src  = info.img;
+    document.getElementById('detail-img').alt  = info.name;
+    document.title = `${info.name} — FortShop`;
+
+    document.getElementById('detail-rarity').style.color = rc;
+    document.getElementById('detail-rarity').textContent = `${info.rarity.toUpperCase()} · ${info.type}`;
+    document.getElementById('detail-title').textContent  = info.name;
+    document.getElementById('detail-desc').textContent   = info.desc || 'No description available.';
+    document.getElementById('detail-price-val').textContent = Number(info.price).toLocaleString();
+
+    const tags = document.getElementById('detail-tags');
+    if (info.set)         tags.innerHTML += `<span class="tag">📦 ${info.set}</span>`;
+    if (info.giftable)    tags.innerHTML += `<span class="tag">🎁 Giftable</span>`;
+    if (entry.refundable) tags.innerHTML += `<span class="tag">↩ Refundable</span>`;
+    if (info.banner)      tags.innerHTML += `<span class="tag">🔥 ${info.banner}</span>`;
+
+    document.getElementById('detail-content').style.display = 'block';
+
+    
+    refreshDetailWishlistBtn(entry);
+
+    
+    const itemKey = entry.offerId || info.name;
+    loadCommentsInto(itemKey, document.getElementById('detail-comments-list'));
+
+    
+    document.getElementById('detail-post-btn').addEventListener('click', async () => {
+      const text = document.getElementById('detail-comment-input').value.trim();
+      if (!text) return;
+      await postComment(itemKey, info.name, text); 
+      document.getElementById('detail-comment-input').value = '';
+      loadCommentsInto(itemKey, document.getElementById('detail-comments-list'));
+    });
+   ;
+
+  []
+  function refreshDetailWishlistBtn(entry) {
+    const btn     = document.getElementById('detail-wishlist-btn');
+    const user    = auth.currentUser;
+    const itemKey = entry.offerId || getItemInfo(entry).name;
+    if (!user) { btn.textContent = '+ Wishlist'; return; }
+
+    isWishlisted(itemKey).then(saved => { 
+      btn.textContent = saved ? '✓ Wishlisted' : '+ Wishlist';
+      btn.onclick = async () => {
+        await toggleWishlist(getItemInfo(entry), itemKey); 
+        refreshDetailWishlistBtn(entry);
+      };
+    });
+  }
+</script>
+
+</body>
+</html>
