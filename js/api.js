@@ -14,7 +14,6 @@ const rarityColors = {
   shadow:    '#4d4d6b',
   star_wars: '#ffe81f'
 };
-s
 
 async function fetchShop() {
   try {

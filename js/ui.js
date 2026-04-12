@@ -11,7 +11,6 @@ function buildItemCard(entry, delay = 0) {
   card.style.animationDelay = `${delay * 40}ms`;
   card.dataset.type   = info.typeRaw;
   card.dataset.rarity = info.rarity;
-s
   card.innerHTML = `
     <div class="card-img-wrap">
       <div class="rarity-stripe"></div>
