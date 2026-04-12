@@ -1,12 +1,12 @@
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC6TS90lpMer5zvuy3W-MEkBqFWrpYtQww",
-  authDomain: "info1601groupproj.firebaseapp.com",
-  projectId: "info1601groupproj",
-  storageBucket: "info1601groupproj.firebasestorage.app",
-  messagingSenderId: "74473462005",
-  appId: "1:74473462005:web:6d891f74afa8660ac00dbc",
-  measurementId: "G-0XH76VMMBE"
+  apiKey: "AIzaSyCMkfK5xeyuCz4YysvM9RW3tNKB3MKJTbk",
+  authDomain: "fortshop-e9a4a.firebaseapp.com",
+  projectId: "fortshop-e9a4a",
+  storageBucket: "fortshop-e9a4a.firebasestorage.app",
+  messagingSenderId: "688887900185",
+  appId: "1:688887900185:web:828c7d8ea2e6601b14e288",
+  measurementId: "G-GVPH3N917Q"
 };
 
 firebase.initializeApp(firebaseConfig);
