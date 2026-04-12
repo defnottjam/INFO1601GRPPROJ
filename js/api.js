@@ -27,7 +27,6 @@ async function fetchShop() {
 }
 
 
- render
 function getItemInfo(entry) {
   const item   = entry.brItems?.[0]
                || entry.tracks?.[0]
