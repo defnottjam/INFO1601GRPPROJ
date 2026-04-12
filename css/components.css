@@ -143,7 +143,6 @@
 .btn-remove:hover { background: rgba(239,68,68,.14); }
 
 
-/* ── TRISH (UI Design): Filter chips ── */
 .chip-row { display: flex; flex-wrap: wrap; gap: .45rem; }
 .chip {
   background:     var(--surface);
@@ -168,7 +167,6 @@
 }
 
 
-/* ── TRISH (UI Design): Sort select ── */
 .sort-select {
   background:  var(--surface);
   border:      1px solid var(--border);
@@ -182,7 +180,6 @@
 }
 
 
-/* ── TRISH (UI Design): Search input ── */
 .search-wrap { position: relative; }
 .search-wrap input {
   background:   var(--surface);
@@ -210,7 +207,6 @@
 }
 
 
-/* ── TRISH (UI Design): Auth form inputs ── */
 .form-input {
   width:         100%;
   background:    var(--bg);
@@ -227,7 +223,6 @@
 .form-input::placeholder { color: var(--muted); }
 
 
-/* ── TRISH (UI Design): Item card ── */
 .item-card {
   background:    var(--surface);
   border:        1px solid var(--border);
