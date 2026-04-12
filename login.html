@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — FortShop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body class="auth-page">
+
+<a href="index.html" class="logo auth-logo">FORT<span>SHOP</span></a>
+
+<div class="auth-card">
+  <h1 class="auth-title">Welcome back</h1>
+  <p class="auth-sub">Log in to manage your wishlist and leave reviews.</p>
+
+  <p class="auth-error" id="login-error" style="display:none"></p>
+
+  <form class="auth-form" id="login-form" novalidate>
+    <label class="form-label" for="login-email">Email</label>
+    <input class="form-input" type="email" id="login-email"
+           placeholder="bob@mail.com" required autocomplete="email"/>
+
+    <label class="form-label" for="login-password">Password</label>
+    <input class="form-input" type="password" id="login-password"
+           placeholder="••••••••" required autocomplete="current-password"/>
+
+    <button type="submit" class="btn-primary btn-full" id="login-btn">Log In</button>
+  </form>
+
+  <p class="auth-switch">Don't have an account? <a href="signup.html" class="auth-link">Sign up free</a></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+  auth.onAuthStateChanged(user => {
+    if (user) window.location.href = 'profile.html';
+  });
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const btn      = document.getElementById('login-btn');
+    const errEl    = document.getElementById('login-error');
+
+    btn.textContent      = 'Logging in…';
+    btn.disabled         = true;
+    errEl.style.display  = 'none';
+
+    try {
+      await signIn(email, password);
+      window.location.href = 'index.html';
+    } catch (err) {
+      errEl.textContent   = getFriendlyError(err.code);
+      errEl.style.display = 'block';
+      btn.textContent     = 'Log In';
+      btn.disabled        = false;
+    }
+  });
+</script>
+
+</body>
+</html>

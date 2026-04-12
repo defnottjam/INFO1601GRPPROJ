@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sign Up — FortShop</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+</head>
+<body class="auth-page">
+
+<a href="index.html" class="logo auth-logo">FORT<span>SHOP</span></a>
+
+<div class="auth-card">
+  <h1 class="auth-title">Create account</h1>
+  <p class="auth-sub">Join FortShop to wishlist items and leave reviews.</p>
+
+  <p class="auth-error" id="signup-error" style="display:none"></p>
+
+  <form class="auth-form" id="signup-form" novalidate>
+    <label class="form-label" for="signup-name">Display name</label>
+    <input class="form-input" type="text" id="signup-name"
+           placeholder="YourUsername" required/>
+
+    <label class="form-label" for="signup-email">Email</label>
+    <input class="form-input" type="email" id="signup-email"
+           placeholder="you@example.com" required autocomplete="email"/>
+
+    <label class="form-label" for="signup-password">Password</label>
+    <input class="form-input" type="password" id="signup-password"
+           placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password"/>
+
+    <button type="submit" class="btn-primary btn-full" id="signup-btn">Create Account</button>
+  </form>
+
+  <p class="auth-switch">Already have an account? <a href="login.html" class="auth-link">Log in</a></p>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="js/auth.js"></script>
+
+<script>
+  auth.onAuthStateChanged(user => {
+    if (user) window.location.href = 'profile.html';
+  });
+  
+  document.getElementById('signup-form').addEventListener('submit', async e => {
+    e.preventDefault();
+
+    const name     = document.getElementById('signup-name').value.trim();
+    const email    = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const btn      = document.getElementById('signup-btn');
+    const errEl    = document.getElementById('signup-error');
+
+    btn.textContent      = 'Creating account…';
+    btn.disabled         = true;
+    errEl.style.display  = 'none';
+
+    try {
+      await signUp(email, password, name);
+      window.location.href = 'profile.html';
+    } catch (err) {
+      errEl.textContent   = getFriendlyError(err.code);
+      errEl.style.display = 'block';
+      btn.textContent     = 'Create Account';
+      btn.disabled        = false;
+    }
+  });
+</script>
+
+</body>
+</html>
