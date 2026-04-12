@@ -1,4 +1,3 @@
- profile.html
 const rarityColors = {
   common:    '#9e9e9e',
   uncommon:  '#4caf50',
