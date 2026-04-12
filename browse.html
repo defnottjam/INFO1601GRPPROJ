@@ -285,7 +285,9 @@
 
     refreshWishlistBtn(entry);
 
-    const itemKey = entry.offerId || info.name;
+    const itemKey = (entry.offerId || getItemInfo(entry).name)
+  .replace(/[\/:.]/g, '_')
+  .substring(0, 100);
     loadComments(itemKey);
 
     document.getElementById('post-comment-btn').onclick = async () => {
@@ -302,7 +304,9 @@
     const user = auth.currentUser;
     if (!user) { btn.textContent = '+ Wishlist'; return; }
 
-    const itemKey = entry.offerId || getItemInfo(entry).name;
+    const itemKey = (entry.offerId || getItemInfo(entry).name)
+  .replace(/[\/:.]/g, '_')
+  .substring(0, 100);
     isWishlisted(itemKey).then(saved => {
       btn.textContent = saved ? '✓ Wishlisted' : '+ Wishlist';
       btn.onclick = async () => {
